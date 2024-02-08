@@ -229,7 +229,7 @@ class MyGridWorldTrainer:
         return Trajectories
 
     # all training functions
-    def all_in_one(self, model, num_trajectories):
+    def train_agent(self, model, num_trajectories):
         self.env = model
         Q = self.train_model(model)
         matrix = self.get_directions(Q)
@@ -238,23 +238,23 @@ class MyGridWorldTrainer:
 # Sample case
 sample_grid = MyGridWorld()
 sample_grid_trainer = MyGridWorldTrainer()
-sample_trajectories = sample_grid_trainer.all_in_one(sample_grid, 20)     # training (Q Learning)
+sample_trajectories = sample_grid_trainer.train_agent(sample_grid, 20)     # training (Q Learning)
 
-# print('Policy: \n')
-# for direction in sample_grid_trainer.matrix:
-#     print(direction)
+print('Policy: \n')
+for direction in sample_grid_trainer.matrix:
+    print(direction)
 
-# print('\nPolicy (directions): \n')
-# for row in sample_grid_trainer.DirectionalMatrix:
-#     print(row)
+print('\nPolicy (directions): \n')
+for row in sample_grid_trainer.DirectionalMatrix:
+    print(row)
 
-# print('\nQ value matrix: \n')
-# for row in sample_grid_trainer.Q:   # Q value for each state action pair
-#     print(row)
+print('\nQ value matrix: \n')
+for row in sample_grid_trainer.Q:   # Q value for each state action pair
+    print(row)
 
-# print('\nTrajectories: \n')
-# for trajectory in sample_trajectories:
-#     print(trajectory)
+print('\nTrajectories: \n')
+for trajectory in sample_trajectories:
+    print(trajectory)
 
 # Define function to visualize the grid and agent's movements
 
@@ -291,4 +291,4 @@ def visualize_trajectories(grid, trajectories):
     plt.tight_layout()
     plt.show()
 
-# visualize_trajectories(sample_grid, sample_trajectories)
+visualize_trajectories(sample_grid, sample_trajectories)

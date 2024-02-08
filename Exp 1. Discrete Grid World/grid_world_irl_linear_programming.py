@@ -8,23 +8,23 @@ import matplotlib.pyplot as plt
 # Agent trained for 20 trajectories
 sample_grid = MyGridWorld()
 sample_grid_trainer = MyGridWorldTrainer()
-sample_trajectories = sample_grid_trainer.all_in_one(sample_grid, 20)     # training (Q Learning)
+sample_trajectories = sample_grid_trainer.train_agent(sample_grid, 20)     # training (Q Learning)
 
-print('Policy: \n')
-for direction in sample_grid_trainer.matrix:
-    print(direction)
+# print('Policy: \n')
+# for direction in sample_grid_trainer.matrix:
+#     print(direction)
 
-print('\nPolicy (directions): \n')
-for row in sample_grid_trainer.DirectionalMatrix:
-    print(row)
+# print('\nPolicy (directions): \n')
+# for row in sample_grid_trainer.DirectionalMatrix:
+#     print(row)
 
-print('\nQ value matrix: \n')
-for row in sample_grid_trainer.Q:   # Q value for each state action pair
-    print(row)
+# print('\nQ value matrix: \n')
+# for row in sample_grid_trainer.Q:   # Q value for each state action pair
+#     print(row)
 
-print('\nTrajectories: \n')
-for trajectory in sample_trajectories:
-    print(trajectory)
+# print('\nTrajectories: \n')
+# for trajectory in sample_trajectories:
+#     print(trajectory)
 
 # function for plotting reward function
 def plot_reward_function(reward, title=''):
@@ -134,9 +134,10 @@ for i in range(5):
             row.append('\u2191')  # Up arrow
     directional_matrix.append(row)
 
-print('Given Optimal Policy: \n')
+print('\nGiven Optimal Policy: \n')
 for row in directional_matrix:
     print(row)
+print('\n')
 
 from scipy.optimize import linprog    # for linear programming
 
@@ -175,7 +176,7 @@ reward = perform_inverse_reinforcement_learning(policy,gamma=0.5,l1=1)
 reward = reward['x'][:25]
 reward = np.reshape(reward,[5,5])
 
-plot_reward_function(reward)    # we get a degenerate reward function
+plot_reward_function(reward, 'Inverse RL Reward Function without Optimization (Degenerate)')    # we get a degenerate reward function
 
 from cvxopt import matrix, solvers
 
@@ -224,7 +225,7 @@ def perform_optimized_IRL(policy, gamma=0.5, penalty=10):
     i = 0
 
     while i < 25:
-        optimalAction = int(policy[i])
+        optimalAction = int(policy[i].item())
         tempTransProbMatrix = gamma * TransitionMatrix[:, :, optimalAction]           # γ⋅Pa1
         patialInvertedMatrix = np.linalg.inv(np.identity(25) - tempTransProbMatrix)   #(I−γ⋅Pa1​)^−1
 
