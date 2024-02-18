@@ -1,6 +1,9 @@
 import numpy as np
 import random
 import matplotlib.pyplot as plt
+from tqdm import tqdm
+from matplotlib.animation import FuncAnimation
+from IPython.display import Image
 
 """Actions:
 * 0 - Left
@@ -13,20 +16,7 @@ Agent Position:  1.1
 
 # Defining GridWorld Environment Class
 
-class MyGridWorld:
-
-    size = 5                        # 5x5 grid
-    RewardGrid = np.zeros([5, 5])   # grid representing rewards
-    RewardGrid[0][4] = 1            # sets reward in the top-right cell to 1
-    PositionGrid = np.zeros([5, 5]) # grid representing the current position of the agent
-    PositionGrid[4][0] = 1.1        # sets agent's initial position in the bottom-left cell
-    action_space = 4                # no. of possible actions
-    noisyMoveChance = 0.3           # probability of noisy move
-    currI = 4                       # row index
-    currJ = 0                       # col index
-    DoneStatus = False              # whether the episode is terminated
-    EnableNoise = True              # enable or disable noise
-    observation_spaces = size * size # total no. of observations
+class GridWorld:
 
     # initialize the environment with default values
     def __init__(self, size=5, noisyMoveChance=0.3, EnableNoise=True):
@@ -42,23 +32,23 @@ class MyGridWorld:
             self.currI = size-1
             self.currJ = 0
             self.observation_spaces = self.size * self.size
-        if 0 < noisyMoveChance < 1:     # probability value
+        if 0 < noisyMoveChance < 1:     # noisy probability value
             self.noisyMoveChance = noisyMoveChance
 
     # resets the environment to its initial state
     def basic_reset(self):
-        self.size = 5
-        self.RewardGrid = np.zeros([5, 5])
-        self.RewardGrid[0][4] = 1
-        self.PositionGrid = np.zeros([5, 5])
-        self.PositionGrid[4][0] = 1.1
-        self.action_space = 4
-        self.noisyMoveChance = 0.3
-        self.currI = 4
-        self.currJ = 0
-        self.DoneStatus = False
-        self.EnableNoise = True
-        self.observation_spaces = self.size * self.size
+        self.size = 5                                    # 5x5 grid
+        self.RewardGrid = np.zeros([5, 5])               # grid representing rewards
+        self.RewardGrid[0][4] = 1                        # sets reward in the top-right cell to 1
+        self.PositionGrid = np.zeros([5, 5])             # grid representing the current position of the agent
+        self.PositionGrid[4][0] = 1.1                    # sets agent's initial position in the bottom-left cell
+        self.action_space = 4                            # no. of possible actions
+        self.noisyMoveChance = 0.3                       # probability of noisy move
+        self.currI = 4                                   # row index
+        self.currJ = 0                                   # col index
+        self.DoneStatus = False                          # whether the episode is terminated
+        self.EnableNoise = True                          # enable or disable noise
+        self.observation_spaces = self.size * self.size  # total no. of observations
 
     # reset environment with parameters
     def reset(self, size=5, noisyMoveChance=0.3, EnableNoise=True):
@@ -67,21 +57,29 @@ class MyGridWorld:
 
     # print the reward grid
     def print_reward_grid(self):
-        for i in range(len(self.RewardGrid)):
-            for j in range(len(self.RewardGrid[0])):
-                print(self.RewardGrid[i][j], end=' ')
-            print()
+        print(self.RewardGrid)
+        print()
 
     # print the position grid
     def print_position_grid(self):
-        for i in range(len(self.PositionGrid)):
-            for j in range(len(self.PositionGrid[0])):
-                print(self.PositionGrid[i][j], end=' ')
-
-    # print the current state of the position grid
+        print(self.PositionGrid)
+        print()
+        
+    # render environment
     def render(self):
-        self.print_position_grid()
-
+        PositionGrid = self.get_position_grid()
+        agent_position = np.argwhere(PositionGrid == 1.1)[0]
+        
+        fig, ax = plt.subplots(figsize=(3,3))
+        ax.plot(agent_position[1] + 0.5, self.size - 1 - agent_position[0] + 0.5, 'kh', markersize=20)
+        ax.set_xticks(range(self.size+1), labels=[])
+        ax.set_yticks(range(self.size+1), labels=[])
+        ax.tick_params(axis='x', which='major', tick1On=False, tick2On=False)
+        ax.tick_params(axis='y', which='major', tick1On=False, tick2On=False)
+        ax.grid()
+        plt.tight_layout()
+        plt.show()
+        
     # return position grid
     def get_position_grid(self):
         return self.PositionGrid
@@ -93,6 +91,10 @@ class MyGridWorld:
     # return size of grid
     def get_size(self):
         return self.size
+        
+    # return observations of grid
+    def get_observations(self):
+        return self.observation_spaces
 
     # takes an action and updates the agent's position
     def move(self, action):
@@ -102,7 +104,8 @@ class MyGridWorld:
         else:
             self.make_proper_move(action)
         return self.currI, self.currJ, self.currI * self.size + self.currJ, self.RewardGrid[self.currI][self.currJ], self.DoneStatus
-
+        # x, y, next state, reward, done status
+    
     # noisy move with random action
     def make_noisy_move(self, action):
         rand_num = random.randint(0, 3)
@@ -141,35 +144,38 @@ class MyGridWorld:
     def step(self, action):
         return self.move(action)
 
-# Define Q-Learning model training class
 
-class MyGridWorldTrainer:
 
-    env = []                # an instance of environment
-    Q = []                  # q value matrix
-    matrix = []             # matrix with actions corresponding to the highest q values for each state
-    Trajectories = []       # list of trajectories obtained during training
-    DirectionalMatrix = []  # matrix with arrows based on the highest q values
 
-    # train a q learning model
-    def train_model(self, model):
+# Define Q-Learning trainer class
+
+class GridWorldTrainer:
+
+    def __init__(self, env_model):
+        self.env = env_model
+        self.Q = np.zeros([self.env.observation_spaces, self.env.action_space])
+        self.matrix = []
+        self.DirectionalMatrix = []
+        self.Trajectories = []
+    
+    # train using q learning
+    def train_agent(self, episodes=20000, alpha = 0.6, gamma = 0.9):
         env = self.env
-        alpha = 0.6    # learning rate
-        gamma = 0.9    # discount factor
         Q = np.zeros([env.observation_spaces, env.action_space])
 
-        for episode in range(1, 20001):
+        for episode in tqdm(range(1, episodes+1), desc=f'Training agent for {episodes} episodes..'):
             done = False
             total_reward = 0
             state = env.reset()    # reset env
 
             while not done:
-                if episode < 500:    # epsilon-greedy strategy
+                if episode < 500:                    # exploration
                     action = random.randint(0, 3)
                 else:
-                    action = np.argmax(Q[state])
+                    action = np.argmax(Q[state])     # exploitation
+                    
                 i, j, state2, reward, done = env.step(action)     # takes an action
-                Q[state, action] += alpha * (reward + gamma * np.max(Q[state2]) - Q[state, action])    # update q value
+                Q[state, action] += alpha * (reward + gamma * np.max(Q[state2]) - Q[state, action])  # update q value
                 total_reward += reward
                 state = state2
 
@@ -180,14 +186,14 @@ class MyGridWorldTrainer:
     def get_directions(self, Q):
         matrix = []
 
-        for i in range(0, 25):
+        for i in range(0, self.env.size*self.env.size):
             matrix.append(np.argmax(Q[i]))      # appends the index of the action with maximum Q-value
-        matrix = np.reshape(matrix, (5, 5))
+        matrix = np.reshape(matrix, (self.env.size, self.env.size))
 
         DirectionalMatrix = []
-        for i in range(5):
+        for i in range(self.env.size):
             row = []
-            for j in range(5):
+            for j in range(self.env.size):
                 if matrix[i][j] == 0:
                     row.append('\u2190')    # left symbol
                 elif matrix[i][j] == 1:
@@ -227,68 +233,110 @@ class MyGridWorldTrainer:
 
         self.Trajectories = Trajectories
         return Trajectories
+    
+    # Print the Q Table
+    def print_q_table(self):
+        print(self.Q)
+        print()
+        
+    # Print the Policy Matrix
+    def print_policy_matrix(self):
+        for row in self.matrix:
+            print(row)
+        print()
+        
+    # Print the Policy Matrix
+    def print_policy_directional_matrix(self):
+        for row in self.DirectionalMatrix:
+            print(row)
+        print()
+        
+    # Print the Trajectories
+    def print_trajectories(self):
+        for trajectory in self.Trajectories:
+            print(trajectory)
+        print()
+            
+    def visualize_trajectories(self, filename=None):
+        env_model = self.env
+        trajectories = self.Trajectories
+        num_trajectories = len(trajectories)
+        num_cols = min(num_trajectories, 5)
+        num_rows = (num_trajectories - 1) // num_cols + 1
+
+        fig, axs = plt.subplots(num_rows, num_cols, figsize=(2 * num_cols+2, 2 * num_rows+2))
+        axs = axs.flatten()
+
+        for i in range(num_trajectories):
+            ax = axs[i]
+            ax.set_xticks(range(env_model.size), labels=[])
+            ax.set_yticks(range(env_model.size), labels=[])
+            ax.tick_params(axis='x', which='major', tick1On=False, tick2On=False)
+            ax.tick_params(axis='y', which='major', tick1On=False, tick2On=False)
+            ax.grid()
+
+            # initial agent position
+            state = trajectories[i][0]
+            ii, jj = divmod(state, env_model.size)
+            ax.plot(jj + 0.5, env_model.size - 1 - ii + 0.5, 'kh', markersize=20)  # agent position
+
+            # plot agent's movements
+            for t in range(1, len(trajectories[i])):
+                next_state = trajectories[i][t]
+                next_ii, next_jj = divmod(next_state, env_model.size)
+                ax.arrow(jj + 0.5, env_model.size - 1 - ii + 0.5,
+                         next_jj - jj, ii - next_ii,
+                         head_width=0.1, head_length=0.1, fc='r', ec='r')    # position of arrows (of movement)
+                ii, jj = next_ii, next_jj
+
+            ax.set_title(f'Trajectory {i + 1}')
+
+
+        plt.tight_layout()
+        if filename:
+        	plt.savefig(filename)
+        plt.show()
+    
+    # visualize agent trajectory
+    def render_trajectory(self, trajectory=0, filename=None, show=False):
+
+        trajectories = self.Trajectories[trajectory]
+        env_model = self.env
+        
+        fig, ax = plt.subplots(figsize=(4,4))
+
+        state = trajectories[0]
+        ii, jj = divmod(state, env_model.size)
+        ax.plot(jj + 0.5, env_model.size - 1 - ii + 0.5, 'kh', markersize=20)
+
+        def update(frame):
+            ax.clear()
+
+            state = trajectories[frame]
+            ii, jj = divmod(state, env_model.size)
+            ax.plot(jj + 0.5, env_model.size - 1 - ii + 0.5, 'kh', markersize=20)  # agent position
+            ax.set_xticks(range(env_model.size+1), labels=[])
+            ax.set_yticks(range(env_model.size+1), labels=[])
+            ax.tick_params(axis='x', which='major', tick1On=False, tick2On=False)
+            ax.tick_params(axis='y', which='major', tick1On=False, tick2On=False)
+            ax.grid()
+            ax.set_title(f'Trajectory {trajectory + 1}')
+
+        rendered = FuncAnimation(fig, update, frames=len(trajectories), interval=300, repeat=True)
+        
+        if filename:
+            rendered.save(filename)
+            if show:
+                display(Image(filename))
+
+        if not filename:
+            plt.show()
+        plt.close()
 
     # all training functions
-    def train_agent(self, model, num_trajectories):
-        self.env = model
-        Q = self.train_model(model)
+    def train_and_get_trajectories(self, env_model, num_trajectories, episodes=20000, alpha = 0.6, gamma = 0.9):
+        self.env = env_model
+        Q = self.train_agent(episodes, alpha, gamma)
         matrix = self.get_directions(Q)
-        return self.get_trajectories(matrix, num_trajectories)
-
-# Sample case
-sample_grid = MyGridWorld()
-sample_grid_trainer = MyGridWorldTrainer()
-sample_trajectories = sample_grid_trainer.train_agent(sample_grid, 20)     # training (Q Learning)
-
-print('Policy: \n')
-for direction in sample_grid_trainer.matrix:
-    print(direction)
-
-print('\nPolicy (directions): \n')
-for row in sample_grid_trainer.DirectionalMatrix:
-    print(row)
-
-print('\nQ value matrix: \n')
-for row in sample_grid_trainer.Q:   # Q value for each state action pair
-    print(row)
-
-print('\nTrajectories: \n')
-for trajectory in sample_trajectories:
-    print(trajectory)
-
-# Define function to visualize the grid and agent's movements
-
-def visualize_trajectories(grid, trajectories):
-    num_trajectories = len(trajectories)
-    num_cols = min(num_trajectories, 5)
-    num_rows = (num_trajectories - 1) // num_cols + 1
-
-    fig, axs = plt.subplots(num_rows, num_cols, figsize=(2 * num_cols, 2 * num_rows))
-    axs = axs.flatten()
-
-    for i in range(num_trajectories):
-        ax = axs[i]
-        ax.set_xticks(range(grid.size))
-        ax.set_yticks(range(grid.size))
-        ax.grid()
-
-        # initial agent position
-        state = trajectories[i][0]
-        ii, jj = divmod(state, grid.size)
-        ax.plot(jj + 0.5, grid.size - 1 - ii + 0.5, 'kh', markersize=20)  # agent position
-
-        # plot agent's movements
-        for t in range(1, len(trajectories[i])):
-            next_state = trajectories[i][t]
-            next_ii, next_jj = divmod(next_state, grid.size)
-            ax.arrow(jj + 0.5, grid.size - 1 - ii + 0.5,
-                     next_jj - jj, ii - next_ii,
-                     head_width=0.1, head_length=0.1, fc='r', ec='r')    # position of arrows (of movement)
-            ii, jj = next_ii, next_jj
-
-        ax.set_title(f'Trajectory {i + 1}')
-
-    plt.tight_layout()
-    plt.show()
-
-visualize_trajectories(sample_grid, sample_trajectories)
+        trajectories = self.get_trajectories(matrix, num_trajectories)
+        return trajectories
