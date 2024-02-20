@@ -8,14 +8,20 @@ This repository implements and showcases experiments based on the paper "Algorit
 
 In the initial experiment, a 5 x 5 grid world is used. The agent starts from the lower-left grid square and navigates to the absorbing upper-right grid square. The actions correspond to the four compass directions, but with a 30% chance of moving in a random direction instead. The objective is to recover the reward structure given the policy and problem dynamics.
 
+<p align="center">
+  <img src="Results/Discrete%20Grid%20World/Agent%20Trajectory%2001.gif" width="248" />
+  <img src="Results/Discrete%20Grid%20World/Agent%20Trajectory%2008.gif" width="248" />
+  <img src="Results/Discrete%20Grid%20World/Agent%20Trajectory%2015.gif" width="248" />
+</p>
+
 #### Results:
 - Obtained a reward function from a given policy which closely approximated the true reward.
 - Also derived a reward funtion by observing the policy of a trained agent.
 
 <p align="center">
-  <img src="Results/Discrete%20Grid%20World/True%20Reward%20Function%20%20[Discrete%20Grid%20World].png" width="250" />
-  <img src="Results/Discrete%20Grid%20World/Obtained%20Reward%20Function%20from%20IRL%20%20[Discrete%20Grid%20World].png" width="250" />
-  <img src="Results/Discrete%20Grid%20World/Obtained%20Reward%20Function%20from%20IRL%20(from%20expert%20agent)%20%20[Discrete%20Grid%20World].png" width="250" />
+  <img src="Results/Discrete%20Grid%20World/True%20Reward%20Function.png" width="250" heigth="250" />
+  <img src="Results/Discrete%20Grid%20World/Obtained%20Reward%20Function.png" width="250" heigth="250" />
+  <img src="Results/Discrete%20Grid%20World/Obtained%20Reward%20Function%20[from%20Expert].png" width="250" heigth="250" />
 </p>
 
 ### 2. Mountain Car Task
