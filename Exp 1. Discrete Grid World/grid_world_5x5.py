@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from matplotlib.animation import FuncAnimation
 from IPython.display import Image
+import seaborn as sns
 
 """Actions:
 * 0 - Left
@@ -59,6 +60,28 @@ class GridWorld:
     def print_reward_grid(self):
         print(self.RewardGrid)
         print()
+        
+    # plot reward function
+    def plot_reward_function(self, reward, title='', filename=None):
+
+        fig = plt.figure(figsize=(7,7))
+        ax = fig.add_subplot(111, projection='3d')
+
+        x = y = np.arange(1,6)
+        X, Y = np.meshgrid(x, y)
+        zs = reward
+        Z = zs.reshape(X.shape)
+        ax.view_init(30, -135)
+        ax.set_xticks(range(1,6))
+        ax.set_xticklabels(range(1,6))
+        ax.set_yticks(range(1,6))
+        ax.set_yticklabels(range(1,6))
+        ax.plot_surface(X, Y, Z, alpha=0.5, cmap='tab10', rstride=1, cstride=1, edgecolors='k', lw=1)
+
+        ax.set_title(title)
+        if filename:
+            plt.savefig(filename, bbox_inches='tight', pad_inches=0.2)
+        plt.show()
 
     # print the position grid
     def print_position_grid(self):
@@ -183,13 +206,19 @@ class GridWorldTrainer:
         return Q
 
     # get optimal directions from learned q values
-    def get_directions(self, Q):
+    def get_policy(self, Q):
         matrix = []
 
         for i in range(0, self.env.size*self.env.size):
             matrix.append(np.argmax(Q[i]))      # appends the index of the action with maximum Q-value
         matrix = np.reshape(matrix, (self.env.size, self.env.size))
 
+        self.matrix = matrix
+        return matrix
+    
+    # get directional matrix of policy
+    def get_directions(self,policy):
+        matrix = policy
         DirectionalMatrix = []
         for i in range(self.env.size):
             row = []
@@ -205,8 +234,7 @@ class GridWorldTrainer:
             DirectionalMatrix.append(row)
 
         self.DirectionalMatrix = DirectionalMatrix
-        self.matrix = matrix
-        return matrix
+        return DirectionalMatrix
 
     # generate trajectories based on optimal actions
     def get_trajectories(self, matrix, num_trajectories):
@@ -250,6 +278,23 @@ class GridWorldTrainer:
         for row in self.DirectionalMatrix:
             print(row)
         print()
+        
+    # Plot the Policy
+    def plot_policy_directional_matrix(self, policy, title='Policy'):
+        matrix = self.get_directions(policy)
+        fig, ax = plt.subplots(figsize=(3,3))
+        cax = ax.matshow([[ord(cell) for cell in row] for row in matrix], cmap='gray_r', vmin=0, vmax=0)
+        for i in range(len(matrix)):
+            for j in range(len(matrix[0])):
+                ax.text(j, i, matrix[i][j], va='center', ha='center', fontsize=14, color='k')
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.grid(True, which='minor', color='k', linestyle='-', linewidth=2)
+        length = 5
+        plt.hlines(y=np.arange(0, length)+0.5, xmin=np.full(length, 0)-0.5, xmax=np.full(length, length)-0.5, color="black")
+        plt.vlines(x=np.arange(0, length)+0.5, ymin=np.full(length, 0)-0.5, ymax=np.full(length, length)-0.5, color="black")
+        plt.title(title)
+        plt.show()
         
     # Print the Trajectories
     def print_trajectories(self):
