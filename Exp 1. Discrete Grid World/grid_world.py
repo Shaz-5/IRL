@@ -33,6 +33,7 @@ class GridWorld:
             self.currI = size-1
             self.currJ = 0
             self.observation_spaces = self.size * self.size
+            self.TransitionMatrix = self.get_transition_matrix()
         if 0 < noisyMoveChance < 1:     # noisy probability value
             self.noisyMoveChance = noisyMoveChance
 
@@ -50,10 +51,11 @@ class GridWorld:
         self.DoneStatus = False                          # whether the episode is terminated
         self.EnableNoise = True                          # enable or disable noise
         self.observation_spaces = self.size * self.size  # total no. of observations
+        self.TransitionMatrix = np.zeros([self.action_space, self.observation_spaces, self.observation_spaces]) # transition probability matrix
 
     # reset environment with parameters
-    def reset(self, size=5, noisyMoveChance=0.3, EnableNoise=True):
-        self.__init__(size, noisyMoveChance, EnableNoise)
+    def reset(self):
+        self.__init__(self.size, self.noisyMoveChance, self.EnableNoise)
         return self.currI * self.size + self.currJ         # current state of the agent
 
     # print the reward grid
@@ -67,15 +69,15 @@ class GridWorld:
         fig = plt.figure(figsize=(7,7))
         ax = fig.add_subplot(111, projection='3d')
 
-        x = y = np.arange(1,6)
+        x = y = np.arange(1,self.size+1)
         X, Y = np.meshgrid(x, y)
         zs = reward
         Z = zs.reshape(X.shape)
         ax.view_init(30, -135)
-        ax.set_xticks(range(1,6))
-        ax.set_xticklabels(range(1,6))
-        ax.set_yticks(range(1,6))
-        ax.set_yticklabels(range(1,6))
+        ax.set_xticks(range(1,self.size+1))
+        ax.set_xticklabels(range(1,self.size+1))
+        ax.set_yticks(range(1,self.size+1))
+        ax.set_yticklabels(range(1,self.size+1))
         ax.plot_surface(X, Y, Z, alpha=0.5, cmap='tab10', rstride=1, cstride=1, edgecolors='k', lw=1)
 
         ax.set_title(title)
@@ -92,8 +94,11 @@ class GridWorld:
     def render(self):
         PositionGrid = self.get_position_grid()
         agent_position = np.argwhere(PositionGrid == 1.1)[0]
+        goal_position = np.argwhere(self.RewardGrid == 1)[0]
         
         fig, ax = plt.subplots(figsize=(3,3))
+        ax.plot(goal_position[1] + 0.55, PositionGrid.shape[0] - 1 - goal_position[0] + 0.55, 'y>', markersize=10)
+        ax.plot(goal_position[1] + 0.42, PositionGrid.shape[0] - 1 - goal_position[0] + 0.4, 'y|', markersize=10)
         ax.plot(agent_position[1] + 0.5, self.size - 1 - agent_position[0] + 0.5, 'kh', markersize=20)
         ax.set_xticks(range(self.size+1), labels=[])
         ax.set_yticks(range(self.size+1), labels=[])
@@ -118,6 +123,73 @@ class GridWorld:
     # return observations of grid
     def get_observations(self):
         return self.observation_spaces
+    
+    # return transition probability matrix
+    def get_transition_matrix(self):
+        size = self.size
+        states = self.observation_spaces
+        actions = self.action_space
+        noisy_move_chance = self.noisyMoveChance
+        transition_matrix = np.zeros([actions, states, states])
+
+        for action in range(actions):
+            for state in range(states):
+                i = int(state / size)
+                j = state % size
+                prob_stay = 1
+
+                # updating transition probabilities based on the chosen action
+                if action == 0:  # Left
+                    if 0 < j:   # not at the left edge of the grid
+                        prob_stay = prob_stay - (1 - noisy_move_chance)   # (1 - noisy_move_chance) = probability of a deterministic transition
+                        j2 = j - 1   # update col index
+                        transition_matrix[action, state, int(i * size + j2)] = 1 - noisy_move_chance   # int(i * size + j2) = index of the resulting state
+
+                elif action == 1:  # Down
+                    if i < size - 1:
+                        prob_stay = prob_stay - (1 - noisy_move_chance)
+                        i2 = i + 1
+                        transition_matrix[action, state, int(i2 * size + j)] = 1 - noisy_move_chance
+
+                elif action == 2:  # Right
+                    if j < size - 1:
+                        prob_stay = prob_stay - (1 - noisy_move_chance)
+                        j2 = j + 1
+                        transition_matrix[action, state, int(i * size + j2)] = 1 - noisy_move_chance
+
+                elif action == 3:  # Up
+                    if 0 < i:
+                        prob_stay = prob_stay - (1 - noisy_move_chance)
+                        i2 = i - 1
+                        transition_matrix[action, state, int(i2 * size + j)] = 1 - noisy_move_chance
+
+                # updating transition probabilities based on the noisy actions (stochastic behavior)
+                if 0 < j:
+                    prob_stay = prob_stay - (noisy_move_chance / 4)
+                    j2 = j - 1
+                    transition_matrix[action, state, int(i * size + j2)] += (noisy_move_chance / 4)
+
+                if i < size - 1:
+                    prob_stay = prob_stay - (noisy_move_chance / 4)
+                    i2 = i + 1
+                    transition_matrix[action, state, int(i2 * size + j)] += (noisy_move_chance / 4)
+
+                if j < size - 1:
+                    prob_stay = prob_stay - (noisy_move_chance / 4)
+                    j2 = j + 1
+                    transition_matrix[action, state, int(i * size + j2)] += (noisy_move_chance / 4)
+
+                if 0 < i:
+                    prob_stay = prob_stay - (noisy_move_chance / 4)
+                    i2 = i - 1
+                    transition_matrix[action, state, int(i2 * size + j)] += (noisy_move_chance / 4)
+
+                if prob_stay < 1e-15:   # very small probability
+                    prob_stay = 0
+                transition_matrix[action, state, state] = prob_stay
+
+        self.TransitionMatrix = transition_matrix
+        return transition_matrix
 
     # takes an action and updates the agent's position
     def move(self, action):
@@ -177,9 +249,14 @@ class GridWorldTrainer:
     def __init__(self, env_model):
         self.env = env_model
         self.Q = np.zeros([self.env.observation_spaces, self.env.action_space])
-        self.matrix = []
-        self.DirectionalMatrix = []
+        self.matrix = False
+        self.DirectionalMatrix = False
         self.Trajectories = []
+        
+        if self.Q.all() != np.zeros([self.env.observation_spaces, self.env.action_space]).all():
+            self.matrix = get_policy(self.Q)
+        if self.DirectionalMatrix:
+            self.DirectionalMatrix = get_directions(self.matrix)
     
     # train using q learning
     def train_agent(self, episodes=20000, alpha = 0.6, gamma = 0.9):
@@ -210,7 +287,10 @@ class GridWorldTrainer:
         matrix = []
 
         for i in range(0, self.env.size*self.env.size):
-            matrix.append(np.argmax(Q[i]))      # appends the index of the action with maximum Q-value
+            if np.argmax(Q[i]) == 0:
+                matrix.append(np.random.randint(2,4))
+            else:
+                matrix.append(np.argmax(Q[i]))                              # action with maximum Q-value
         matrix = np.reshape(matrix, (self.env.size, self.env.size))
 
         self.matrix = matrix
@@ -280,13 +360,17 @@ class GridWorldTrainer:
         print()
         
     # Plot the Policy
-    def plot_policy_directional_matrix(self, policy, title='Policy'):
+    def plot_policy_matrix(self, policy, title='Policy'):
         matrix = self.get_directions(policy)
+        goal_state = np.argwhere(self.env.RewardGrid == 1)[0]
         fig, ax = plt.subplots(figsize=(3,3))
         cax = ax.matshow([[ord(cell) for cell in row] for row in matrix], cmap='gray_r', vmin=0, vmax=0)
         for i in range(len(matrix)):
             for j in range(len(matrix[0])):
-                ax.text(j, i, matrix[i][j], va='center', ha='center', fontsize=14, color='k')
+                if i==goal_state[0] and j==goal_state[1]:
+                    continue
+                else:
+                    ax.text(j, i, matrix[i][j], va='center', ha='center', fontsize=14, color='k')
         ax.set_xticks([])
         ax.set_yticks([])
         ax.grid(True, which='minor', color='k', linestyle='-', linewidth=2)
@@ -309,7 +393,7 @@ class GridWorldTrainer:
         num_cols = min(num_trajectories, 5)
         num_rows = (num_trajectories - 1) // num_cols + 1
 
-        fig, axs = plt.subplots(num_rows, num_cols, figsize=(2 * num_cols+2, 2 * num_rows+2))
+        fig, axs = plt.subplots(num_rows, num_cols, figsize=(2 * num_cols+3, 2 * num_rows+3))
         axs = axs.flatten()
 
         for i in range(num_trajectories):
@@ -323,7 +407,10 @@ class GridWorldTrainer:
             # initial agent position
             state = trajectories[i][0]
             ii, jj = divmod(state, env_model.size)
-            ax.plot(jj + 0.5, env_model.size - 1 - ii + 0.5, 'kh', markersize=20)  # agent position
+            goal_position = np.argwhere(env_model.RewardGrid == 1)[0]
+            ax.plot(goal_position[1] + 0.55, env_model.size - 1 - goal_position[0] + 0.55, 'y>', markersize=8)
+            ax.plot(goal_position[1] + 0.43, env_model.size - 1 - goal_position[0] + 0.4, 'y|', markersize=8)
+            ax.plot(jj + 0.5, env_model.size - 1 - ii + 0.5, 'kh', markersize=16)  # agent position
 
             # plot agent's movements
             for t in range(1, len(trajectories[i])):
@@ -359,7 +446,10 @@ class GridWorldTrainer:
 
             state = trajectories[frame]
             ii, jj = divmod(state, env_model.size)
-            ax.plot(jj + 0.5, env_model.size - 1 - ii + 0.5, 'kh', markersize=20)  # agent position
+            goal_position = np.argwhere(env_model.RewardGrid == 1)[0]
+            ax.plot(goal_position[1] + 0.55, env_model.size - 1 - goal_position[0] + 0.55, 'y>', markersize=10)
+            ax.plot(goal_position[1] + 0.43, env_model.size - 1 - goal_position[0] + 0.4, 'y|', markersize=10)
+            ax.plot(jj + 0.5, env_model.size - 1 - ii + 0.5, 'kh', markersize=20)
             ax.set_xticks(range(env_model.size+1), labels=[])
             ax.set_yticks(range(env_model.size+1), labels=[])
             ax.tick_params(axis='x', which='major', tick1On=False, tick2On=False)

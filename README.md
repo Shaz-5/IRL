@@ -20,8 +20,8 @@ In the initial experiment, a 5 x 5 grid world is used. The agent starts from the
 
 <p align="center">
   <img src="Results/Discrete%20Grid%20World/True%20Reward%20Function.png" width="250" heigth="250" />
-  <img src="Results/Discrete%20Grid%20World/Obtained%20Reward%20Function.png" width="250" heigth="250" />
-  <img src="Results/Discrete%20Grid%20World/Obtained%20Reward%20Function%20[from%20Expert].png" width="250" heigth="250" />
+  <img src="Results/Discrete%20Grid%20World/Reward%20Function%20obtained%20from%20Expert.png" width="250" heigth="250" />
+  <img src="Results/Discrete%20Grid%20World/Reward%20Function%20obtained%20from%20given%20policy.png" width="250" heigth="250" />
 </p>
 
 ### 2. Mountain Car Task
@@ -48,7 +48,7 @@ The final experiment applies the sample-based algorithm to a continuous version 
 </p>
 
 
-## Documentation
+## Further Reading
 
 Feel free to explore my introductory presentation to Inverse Reinforcement Learning (IRL) and also get an overview of the experiments conducted.
 
@@ -58,4 +58,5 @@ Feel free to explore my introductory presentation to Inverse Reinforcement Learn
 ## References
 
 - Ng, A., & Russell, S. (2000). Algorithms for Inverse Reinforcement Learning.
-- ShivinDass. (n.d.). GitHub - ShivinDass/inverse_rl: GitHub: github.com/ShivinDass/inverse_rl
+- ShivinDass. (n.d.). GitHub - ShivinDass/inverse_rl. GitHub.
+Neka-Nat. (n.d.). Neka-nat/inv_rl: Inverse reinforcement learning argorithms. GitHub.
