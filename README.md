@@ -28,11 +28,15 @@ In the initial experiment, a 5 x 5 grid world is used. The agent starts from the
 
 The second experiment involves the "mountain-car" task, where the goal is to reach the top of the hill. The true, undiscounted, reward is -1 per step until reaching the goal. The state is the car's position and velocity, and the state space is continuous.
 
+<p align="center">
+  <img src="Results/Mountain%20Car/Render%201.gif" alt="Mountain Car" width="500" height="350">
+</p>
+
 #### Results:
 - Using a reward function based on the car's position and 26 Gaussian-shaped basis functions, the algorithm produces a reward function that captures the structure of the true reward.
 
 <p align="center">
-  <img src="Results/Mountain%20Car/Obtained%20Reward%20Function%20from%20IRL%20%5BMountain%20Car%5D.png" alt="Obtained Reward Function" width="420" height="350">
+  <img src="Results/Mountain%20Car/Reward%20Function%20[Obtained%20from%20Expert].png" alt="Obtained Reward Function" width="500" height="400">
 </p>
 
 ### 3. Continuous Grid World

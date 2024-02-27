@@ -30,6 +30,17 @@ def get_state(s):
     return int(xpos), int(vpos)     # indices in the discretized state space
 
 
+# function to get next state
+def get_next_state(s, a, env=env, x_binsize=x_binsize, v_binsize=v_binsize, xmin=xmin, vmin=vmin):
+    x = x_binsize * s[0] + xmin   # discretized state to continuous state
+    v = v_binsize * s[1] + vmin
+
+    env.reset()
+    obs, R, done, info = env.step(a)
+
+    return get_state(obs)          # continuous to discrete
+    
+
 # training agent using Q Learning
 def Q_learning_train(env, discretization, epsilon=0.1, alpha=0.1, gamma=0.9, max_episodes=20000, 
                      save=False, video_path='./'):
@@ -115,41 +126,3 @@ def render_agent(env, Q, N=1, render_filename='Render'):
             display(Image(data=f.read(), format='gif'))
             
 
-# function for calculating the probability density function (PDF) of a normal distribution
-def get_pdf(x, mean, std_dev):
-    
-    z = (x - mean) / std_dev
-    pdf = (exp(-(z**2) / 2) / (sqrt(2 * pi) * std_dev))
-    
-    return pdf
-    
-    
-# calculate the value function through Q Learning
-def get_value_function(Q, mean, scale, i, alpha=0.1, gamma=0.99, epsilon=0.05, max_episodes=10000, save_path='./'):
-
-    V = [[0 for _ in range(120)] for _ in range(120)]
-
-    for episode in tqdm(range(max_episodes), desc='Calculating Value Function..'):
-        obs = env.reset()
-
-        while True:
-            x, v = get_state(obs)
-            a=np.argmax(np.array(Q[x][v]))
-
-            obs, R, done, info = env.step(a)
-            R = calc_pdf(x, mean, scale)  # calculate a reward using a probability density function (PDF)
-
-            x1, v1 = get_state(obs)  # get next state (x1, v1)
-
-            V[x][v] += alpha * (R + gamma * V[x1][v1] - V[x][v])  # update value function using the Q-learning update rule
-
-            if done:
-                break
-
-    # Save the value function
-    if save_path:
-        index_str = str(i).zfill(2)
-        with open(f'{save_path}{index_str}.pkl', 'wb') as file:
-            pickle.dump(V, file)
-
-    return V
