@@ -43,12 +43,17 @@ The second experiment involves the "mountain-car" task, where the goal is to rea
 
 The final experiment applies the sample-based algorithm to a continuous version of the 5 x 5 grid world. The state space is [0, 1] × [0, 1], and actions move the agent 0.2 in the intended direction with added noise. The true reward is 1 in a non-absorbing square [0.8, 1] × [0.8, 1], and 0 everywhere else.
 
-#### Results:
+<p align="center">
+  <img src="Results/Continuous%20Grid%20World/True%20Reward%20Function.png" width="500" />
+</p>
+
+#### Results:s
 - The algorithm, using linear combinations of two-dimensional Gaussian basis functions and produces reasonable solutions.
 
 <p align="center">
-  <img src="Results/Continuous%20Grid%20World/Actual%20Reward%20Function%20%5BContinous%20Grid%20World%5D.png" width="400" />
-  <img src="Results/Continuous%20Grid%20World/Obtained%20Reward%20Function%20%5BContinous%20Grid%20World%5D.png" width="400" />
+  <img src="Results/Continuous%20Grid%20World/Obtained Reward%20-%20Iteration%201.png" width="250" heigth="250" />
+  <img src="Results/Continuous%20Grid%20World/Obtained Reward%20-%20Iteration%205.png" width="250" heigth="250" />
+  <img src="Results/Continuous%20Grid%20World/Obtained Reward%20-%20Iteration%2010.png" width="250" heigth="250" />
 </p>
 
 
