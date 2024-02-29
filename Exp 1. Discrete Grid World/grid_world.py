@@ -374,7 +374,7 @@ class GridWorldTrainer:
         ax.set_xticks([])
         ax.set_yticks([])
         ax.grid(True, which='minor', color='k', linestyle='-', linewidth=2)
-        length = 5
+        length = self.env.size
         plt.hlines(y=np.arange(0, length)+0.5, xmin=np.full(length, 0)-0.5, xmax=np.full(length, length)-0.5, color="black")
         plt.vlines(x=np.arange(0, length)+0.5, ymin=np.full(length, 0)-0.5, ymax=np.full(length, length)-0.5, color="black")
         plt.title(title)
